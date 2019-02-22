@@ -2,7 +2,7 @@ import argparse
 
 from data import get_training_set, get_test_set
 from torch.utils.data import DataLoader
-
+from network import EncoderNet, DecoderNet
 
 parser = argparse.ArgumentParser(description='ImageNet Image Compression')
 parser.add_argument('--batchSize', type=int, default=64, help='training batch size')
@@ -27,6 +27,12 @@ test_set = get_test_set(opt.upscale_factor)
 training_data_loader = DataLoader(dataset=train_set, num_workers=opt.threads, batch_size=opt.batchSize, shuffle=True)
 testing_data_loader = DataLoader(dataset=test_set, num_workers=opt.threads, batch_size=opt.testBatchSize, shuffle=False)
 
+cudnn.benchmark = False #TODO : to check with value as True
+
+if torch.cuda.is_available() and not opt.cuda:
+    print("WARNING: You have a CUDA device, so you should probably run with --cuda")
+
+device = torch.device("cuda:0" if opt.cuda else "cpu")
 
 
 def main():

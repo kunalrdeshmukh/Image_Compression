@@ -20,17 +20,16 @@ class DatasetFromFolder(data.Dataset):
         self.image_filenames = [join(image_dir, x) for x in listdir(image_dir) if is_image_file(x)]
 
         self.input_transform = input_transform
-        self.target_transform = target_transform
 
     def __getitem__(self, index):
         input = load_img(self.image_filenames[index])
-        target = input.copy()
+        # target = input.copy()
         if self.input_transform:
             input = self.input_transform(input)
-        if self.target_transform:
-            target = self.target_transform(target)
+        # if self.target_transform:
+        #     target = self.target_transform(target)
 
-        return input, target
+        return input #, target
 
     def __len__(self):
-return len(self.image_filenames)
+        return len(self.image_filenames)

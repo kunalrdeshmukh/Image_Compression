@@ -5,12 +5,12 @@ import torch.nn.functional as F
 from modules import ConvLSTMCell, Sign
 
 
-class Compression(nn.Module):
+class EncoderNet(nn.Module):
     """
-    Code for compression module
+    Code for encoder module
     """
     def __init__(self,info):
-        super(Compression, self).__init__()
+        super(EncoderNet, self).__init__()
         channels = info[0]
         self.conv1 = nn.Conv2d(channels, 64, kernel_size=3, stride=1, padding=1)
         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=0)
@@ -24,17 +24,13 @@ class Compression(nn.Module):
         return self.conv3(out)
 
 
-# class Binizer(nn.Module):
-#     def __init__(self):
-#         super(Binizer, self).__init__()
 
-
-class Reconstruction(nn.Module):
+class DecoderNet(nn.Module):
     """
-    Code for reconstruction module
+    Code for decoder module
     """
     def __init__(self,info):
-        super(Reconstruction, self).__init__()
+        super(DecoderNet, self).__init__()
         channels = info[0]
         self.interpolate = Interpolate(size=HEIGHT, mode='bilinear')
         self.deconv1 = nn.Conv2d(channels, 64, 3, stride=1, padding=1)
