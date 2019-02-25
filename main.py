@@ -1,10 +1,16 @@
 import argparse
 
-from data import get_training_set, get_test_set
+from torch.cuda import is_available 
 from torch.utils.data import DataLoader
-from network import EncoderNet, DecoderNet
 import torch.nn as nn
 import torch.optim as optim
+from torch.backends import cudnn
+from torch import save
+
+from network import EncoderNet, DecoderNet
+from data import get_training_set, get_test_set
+
+
 
 
 parser = argparse.ArgumentParser(description='Image Compression')
@@ -14,13 +20,13 @@ parser.add_argument('--nEpochs', type=int, default=2, help='number of epochs to 
 parser.add_argument('--lr', type=float, default=0.01, help='Learning Rate. Default=0.01')
 parser.add_argument('--beta', type=float, default=0.5, help='beta1 for adam. default=0.5')
 parser.add_argument('--threads', type=int, default=4, help='number of threads for data loader to use')
-parser.add_argument('--seed', type=int, default=123, help='random seed to use. Default=123')
+parser.add_argument('--seed', type=int, default=123, help='random seed to uspe. Default=123')
 parser.add_argument('--niter', type=int, default=25, help='number of epochs to train for')
 parser.add_argument('--encoder_net', type=str, default='', help='Path to pre-trained encoder net. Default=3')
 parser.add_argument('--decoder_net', type=str, default='', help='path to pre-trained deocder net. Default=3')
 parser.add_argument('--outf', default='.', help='folder to output images and model checkpoints')
 parser.add_argument('--channels', type=int, default=3, help='number of channels in an image. Default=3')
-parser.add_argument('--data_path', type=str, default='/Users/kunaldeshmukh/Dropbox/Spring_19/298/Image_compression_network/Dataset/CLIC', 
+parser.add_argument('--data_path', type=str, default='./Dataset/CLIC', 
                 help='path to images. Default=CLIC')
 parser.add_argument('--image_size', type=int, default=200, help='path to images. Default=200')
 
@@ -64,7 +70,7 @@ def get_decoder_info():
 
 
 
-def train(encoder,decoder,):
+def train(encoder,decoder,CUDA):
 
     print(' ===== Training ===== ')
 
@@ -77,14 +83,11 @@ def train(encoder,decoder,):
         epoch_loss = 0
         for i, data in enumerate(training_data_loader, 0):
 
-            print("len of data : ")
-            print(len(Data))
-
             # Move data to device
             if CUDA :
-                input = data[0].to("cuda")
+                input = data.to("cuda")
             else : 
-                input = data[0].to("cpu")
+                input = data.to("cpu")
 
             # set gradient to zero
             optimizerE.zero_grad()
@@ -94,27 +97,31 @@ def train(encoder,decoder,):
             decoder_output, residual_img, upscaled_image  = decoder(input)
 
             loss1 = criterion(input, decoder_output)
-            loss2 = criterion(residual_img,input-upscaled_image)
+            loss2 = criterion(residual_img,upscaled_image)
             (loss1+loss2).backward()
 
             optimizerE.step()
             optimizerD.step()
-
-            loss += loss1.item() + loss2.item()
+            print(loss1.item())
+            print(loss2.item())
+            loss = loss1.item() + loss2.item()
 
             epoch_loss += loss
 
-            print("===> Epoch[{}]({}/{}): Loss: {:.4f}".format(epoch, i, len(training_data_loader), loss.item()))
+            print("===> Epoch[{}]({}/{}): Loss: {:.4f}".format(epoch, i, len(training_data_loader), loss))
         
         print("===> Epoch {} Complete: Avg. Loss: {:.4f}".format(epoch, epoch_loss / len(training_data_loader)))
 
 
         # do checkpointing
-        torch.save(encoder.state_dict(), '%s/Encoder_epoch_%d.pth' % (opt.outf, epoch))
-        torch.save(decoder.state_dict(), '%s/Decoder_epoch_%d.pth' % (opt.outf, epoch))
+        save(encoder.state_dict(), '%s/Encoder_epoch_%d.pth' % (opt.outf, epoch))
+        save(decoder.state_dict(), '%s/Decoder_epoch_%d.pth' % (opt.outf, epoch))
 
 
 def test(encoder,decoder,CUDA):
+
+    print(' ===== Testing ===== ')
+
     avg_psnr = 0
     with torch.no_grad():
         for batch in testing_data_loader:
@@ -138,7 +145,7 @@ def main():
     encoder_info = get_encoder_info()
     decoder_info = get_decoder_info()
 
-    CUDA = torch.cuda.is_available()
+    CUDA = is_available()
     if CUDA:
         encoder = EncoderNet(encoder_info).cuda()
         decoder = DecoderNet(decoder_info).cuda()

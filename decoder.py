@@ -4,6 +4,8 @@ import torch
 from PIL import Image
 from torchvision.transforms import ToTensor
 from torchvision.utils import save_image
+from torch.cuda import is_available 
+
 
 import numpy as np
 
@@ -21,7 +23,7 @@ model = torch.load(opt.model)
 img_to_tensor = ToTensor()
 input = img_to_tensor(img)
 
-if torch.cuda.is_available():
+if is_available():
     model = model.cuda()
     input = input.cuda()
 
