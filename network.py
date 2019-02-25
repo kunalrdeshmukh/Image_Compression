@@ -11,11 +11,13 @@ class EncoderNet(nn.Module):
     """
     def __init__(self,info):
         super(EncoderNet, self).__init__()
-        channels = info[0]
+        
+        self.channels = info['channels']
+
         self.conv1 = nn.Conv2d(channels, 64, kernel_size=3, stride=1, padding=1)
         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=0)
         self.bn1 = nn.BatchNorm2d(64, affine=False)
-        self.conv3 = nn.Conv2d(64, channels, kernel_size=3, stride=1, padding=1)
+        self.conv3 = nn.Conv2d(64,channels, kernel_size=3, stride=1, padding=1)
 
     def forward(self,x):
         out = self.relu(self.conv1(x))
@@ -31,8 +33,10 @@ class DecoderNet(nn.Module):
     """
     def __init__(self,info):
         super(DecoderNet, self).__init__()
-        channels = info[0]
-        self.interpolate = Interpolate(size=HEIGHT, mode='bilinear')
+        self.channels = info['channels']
+        self.size = info['size']
+
+        self.interpolate = Interpolate(size=size, mode='bilinear')
         self.deconv1 = nn.Conv2d(channels, 64, 3, stride=1, padding=1)
         self.deconv2 = nn.Conv2d(64, 64, 3, stride=1, padding=1)
         self.bn2 = nn.BatchNorm2d(64, affine=False)
@@ -41,7 +45,7 @@ class DecoderNet(nn.Module):
         self.deconv_n = nn.Conv2d(64, 64, 3, stride=1, padding=1)
         self.bn_n = nn.BatchNorm2d(64, affine=False)
 
-        self.deconv3 = nn.ConvTranspose2d(64, channels, 3, stride=1, padding=1)
+        self.deconv3 = nn.ConvTranspose2d(64,channels, 3, stride=1, padding=1)
     
     def forward(self, z):
         upscaled_image = self.interpolate(z)

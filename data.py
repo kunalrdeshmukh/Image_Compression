@@ -23,11 +23,11 @@ def target_transform(crop_size):
 def get_training_set(path,crop_size):
     train_dir = join(path, "train")
     return DatasetFromFolder(train_dir,
-                            input_transform=input_transform(crop_size, upscale_factor))
+                            input_transform=input_transform(crop_size))
 
 
 def get_test_set(path,crop_size):
     test_dir = join(path, "test")
 
     return DatasetFromFolder(test_dir,
-                            input_transform=input_transform(crop_size, upscale_factor))
+                            input_transform=input_transform(crop_size))
