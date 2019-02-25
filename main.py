@@ -129,7 +129,7 @@ def test(encoder,decoder,CUDA):
                 input = batch.to('cpu')
 
             compressed_img = encoder(input)
-            retrived_img = decoder(compressed)
+            retrived_img = decoder(compressed_img)
             mse = criterion(input, retrived_img)
             psnr = 10 * log10(1 / mse.item())
             avg_psnr += psnr

@@ -27,9 +27,9 @@ if is_available():
     model = model.cuda()
     input = input.cuda()
 
-out = model(input)
-out = out.cpu()
-out_img = out[0].detach().numpy()
+final,out,upscaled_image = model(input)
+final = final.cpu()
+out_img = final[0].detach().numpy()
 out_img *= 255.0
 out_img = out_img.clip(0, 255)
 
