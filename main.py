@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 import torch.nn as nn
 import torch.optim as optim
 from torch.backends import cudnn
-from torch import save
+from torch import save,no_grad
 
 from network import EncoderNet, DecoderNet
 from data import get_training_set, get_test_set
@@ -21,7 +21,6 @@ parser.add_argument('--lr', type=float, default=0.01, help='Learning Rate. Defau
 parser.add_argument('--beta', type=float, default=0.5, help='beta1 for adam. default=0.5')
 parser.add_argument('--threads', type=int, default=4, help='number of threads for data loader to use')
 parser.add_argument('--seed', type=int, default=123, help='random seed to uspe. Default=123')
-parser.add_argument('--niter', type=int, default=25, help='number of epochs to train for')
 parser.add_argument('--encoder_net', type=str, default='', help='Path to pre-trained encoder net. Default=3')
 parser.add_argument('--decoder_net', type=str, default='', help='path to pre-trained deocder net. Default=3')
 parser.add_argument('--outf', default='.', help='folder to output images and model checkpoints')
@@ -79,7 +78,7 @@ def train(encoder,decoder,CUDA):
     # optimizerE = optim.SGD(netD.parameters(), lr=opt.lr)
     # optimizerD = optim.SGD(netG.parameters(), lr=opt.lr)
 
-    for epoch in range(opt.niter):
+    for epoch in range(opt.nEpochs):
         epoch_loss = 0
         for i, data in enumerate(training_data_loader, 0):
 
@@ -123,7 +122,7 @@ def test(encoder,decoder,CUDA):
     print(' ===== Testing ===== ')
 
     avg_psnr = 0
-    with torch.no_grad():
+    with no_grad():
         for batch in testing_data_loader:
             if CUDA:
                 input = batch[0].to('cuda')
@@ -172,8 +171,6 @@ def main():
     train(encoder,decoder,CUDA)
 
     test(encoder,decoder,CUDA)
-
-
 
 
 if __name__ == '__main__':

@@ -27,7 +27,7 @@ def get_training_set(path,crop_size):
 
 
 def get_test_set(path,crop_size):
-    test_dir = join(path, "test")
+    test_dir = join(path, "valid")
 
     return DatasetFromFolder(test_dir,
                             input_transform=input_transform(crop_size))
