@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.backends import cudnn
 from torch import save,no_grad
+from math import log10
 
 from network import EncoderNet, DecoderNet
 from data import get_training_set, get_test_set
