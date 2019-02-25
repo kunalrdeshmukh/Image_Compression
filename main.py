@@ -15,7 +15,7 @@ from data import get_training_set, get_test_set
 
 parser = argparse.ArgumentParser(description='Image Compression')
 parser.add_argument('--batchSize', type=int, default=64, help='training batch size')
-parser.add_argument('--testBatchSize', type=int, default=10, help='testing batch size')
+parser.add_argument('--testBatchSize', type=int, default=8, help='testing batch size')
 parser.add_argument('--nEpochs', type=int, default=2, help='number of epochs to train for')
 parser.add_argument('--lr', type=float, default=0.01, help='Learning Rate. Default=0.01')
 parser.add_argument('--beta', type=float, default=0.5, help='beta1 for adam. default=0.5')
@@ -101,8 +101,7 @@ def train(encoder,decoder,CUDA):
 
             optimizerE.step()
             optimizerD.step()
-            print(loss1.item())
-            print(loss2.item())
+ 
             loss = loss1.item() + loss2.item()
 
             epoch_loss += loss
@@ -125,9 +124,9 @@ def test(encoder,decoder,CUDA):
     with no_grad():
         for batch in testing_data_loader:
             if CUDA:
-                input = batch[0].to('cuda')
+                input = batch.to('cuda')
             else:
-                input = batch[0].to('cpu')
+                input = batch.to('cpu')
 
             compressed_img = encoder(input)
             retrived_img = decoder(compressed)
