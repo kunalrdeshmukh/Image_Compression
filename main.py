@@ -146,6 +146,7 @@ def main():
 
     CUDA = is_available()
     if CUDA:
+        print("===== Using CUDA ======")
         encoder = EncoderNet(encoder_info).cuda()
         decoder = DecoderNet(decoder_info).cuda()
     else :
