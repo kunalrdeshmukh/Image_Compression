@@ -129,8 +129,8 @@ def test(encoder,decoder,CUDA):
                 input = batch.to('cpu')
 
             compressed_img = encoder(input)
-            retrived_img = decoder(compressed_img)
-            mse = criterion(input, retrived_img)
+            final,out,upscaled_imag = decoder(compressed_img)
+            mse = criterion(input, final)
             psnr = 10 * log10(1 / mse.item())
             avg_psnr += psnr
     print("===> Avg. PSNR: {:.4f} dB".format(avg_psnr / len(testing_data_loader)))
