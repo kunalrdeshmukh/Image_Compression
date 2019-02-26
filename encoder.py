@@ -17,14 +17,18 @@ parser.add_argument('--model', type=str, required=True, help='model file to use'
 parser.add_argument('--output_filename', type=str, help='where to save the output image')
 parser.add_argument('--channels', type=int, default=3, help='number of channels in an image. Default=3')
 parser.add_argument('--imageSize', type=int, default=200, help='image width. Only square images are supported. Default=200.')
+parser.add_argument('--model_epoch', type=int, default=-1, help='Epoch for which model needs to be loaded. Default=200.')
 opt = parser.parse_args()
 
 print(opt)
 img = Image.open(opt.input_image).convert('RGB')
 img = img.resize((opt.imageSize, opt.imageSize), Image.ANTIALIAS)
 
-model = EncoderNet(opt.channels)
-model = load_state_dict(opt.model)
+if (opt.model_epoch == -1) :
+    model = torch.load(opt.model)
+else :
+    pass
+    # TODO : load model for specific epoch
 img_to_tensor = ToTensor()
 input = img_to_tensor(img)
 

@@ -136,6 +136,7 @@ def test(encoder,decoder,CUDA):
             avg_psnr += psnr
     print("===> Avg. PSNR: {:.4f} dB".format(avg_psnr / len(testing_data_loader)))
 
+
     
 
 def main():
@@ -172,6 +173,11 @@ def main():
     train(encoder,decoder,CUDA)
 
     test(encoder,decoder,CUDA)
+
+    # Save Model
+    torch.save(encoder,'%s/Encoder_model'%opt.outf )
+    torch.save(encoder,'%s/Decoder_model'%opt.outf )
+    print("Models saved at "+opt.outf)
 
 
 if __name__ == '__main__':
