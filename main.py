@@ -148,6 +148,7 @@ def main():
     CUDA = is_available()
     if CUDA:
         print(" Using CUDA ...")
+        print()
         encoder = EncoderNet(encoder_info).cuda()
         decoder = DecoderNet(decoder_info).cuda()
     else :
@@ -176,7 +177,7 @@ def main():
 
     # Save Model
     save(encoder,'%s/Encoder_model.pth'%opt.outf )
-    save(encoder,'%s/Decoder_model.pth'%opt.outf )
+    save(decoder,'%s/Decoder_model.pth'%opt.outf )
     print("Models saved at "+opt.outf)
 
 
