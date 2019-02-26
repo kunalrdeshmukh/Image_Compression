@@ -32,8 +32,14 @@ else :
 img_to_tensor = ToTensor()
 input = img_to_tensor(img)
 
+if is_available():
+    input = input.cuda()
+    model = model.cuda()
 
+input.unsqueeze(0)
 out = model(input)
+out = out.unsqueeze_(0)
+
 out = out.cpu()
 out_img = out[0].detach().numpy()
 out_img *= 255.0

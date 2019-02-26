@@ -107,7 +107,7 @@ def train(encoder,decoder,CUDA):
 
             epoch_loss += loss
 
-            print("===> Epoch[{}]({}/{}): Loss: {:.4f}".format(epoch, i, len(training_data_loader), loss))
+            print("===> Epoch[{}]({}/{}): Training Loss: {:.4f}".format(epoch, i, len(training_data_loader), loss))
         
         print("===> Epoch {} Complete: Avg. Loss: {:.4f}".format(epoch, epoch_loss / len(training_data_loader)))
 
@@ -147,7 +147,7 @@ def main():
 
     CUDA = is_available()
     if CUDA:
-        print("===== Using CUDA ======")
+        print(" Using CUDA ...")
         encoder = EncoderNet(encoder_info).cuda()
         decoder = DecoderNet(decoder_info).cuda()
     else :
@@ -175,8 +175,8 @@ def main():
     test(encoder,decoder,CUDA)
 
     # Save Model
-    torch.save(encoder,'%s/Encoder_model'%opt.outf )
-    torch.save(encoder,'%s/Decoder_model'%opt.outf )
+    save(encoder,'%s/Encoder_model.pth'%opt.outf )
+    save(encoder,'%s/Decoder_model.pth'%opt.outf )
     print("Models saved at "+opt.outf)
 
 
