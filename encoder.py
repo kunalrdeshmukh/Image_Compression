@@ -5,6 +5,7 @@ from PIL import Image
 from torchvision.transforms import ToTensor
 from torchvision.utils import save_image
 from torch.cuda import is_available 
+from network import EncoderNet
 
 
 import numpy as np
@@ -21,7 +22,8 @@ print(opt)
 img = Image.open(opt.input_image).convert('RGB')
 img = img.resize((opt.imageSize, opt.imageSize), Image.ANTIALIAS)
 
-model = torch.load(opt.model)
+model = EncoderNet(*args, **kwargs)
+model = load_state_dict(opt.model)
 img_to_tensor = ToTensor()
 input = img_to_tensor(img)
 
