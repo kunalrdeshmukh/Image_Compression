@@ -119,7 +119,7 @@ def train(encoder,decoder,CUDA):
 
 def test(encoder,decoder,CUDA):
 
-    print(' ===== Testing ===== ')
+    print(' ===== Validation ===== ')
 
     avg_psnr = 0
     with no_grad():

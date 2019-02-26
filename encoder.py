@@ -25,9 +25,6 @@ model = torch.load(opt.model)
 img_to_tensor = ToTensor()
 input = img_to_tensor(img)
 
-if is_available():
-    model = model.cuda()
-    input = input.cuda()
 
 out = model(input)
 out = out.cpu()
