@@ -14,10 +14,12 @@ parser = argparse.ArgumentParser(description='Image compression')
 parser.add_argument('--input_image', type=str, required=True, help='input image to use')
 parser.add_argument('--model', type=str, required=True, help='model file to use')
 parser.add_argument('--output_filename', type=str, help='where to save the output image')
+parser.add_argument('--imageSize', type=int, default=200, help='image width. Only square images are supported. Default=200.')
 opt = parser.parse_args()
 
 print(opt)
 img = Image.open(opt.input_image).convert('RGB')
+img = img.resize((opt.imageSize, opt.imageSize), Image.ANTIALIAS)
 
 model = torch.load(opt.model)
 img_to_tensor = ToTensor()
