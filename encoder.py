@@ -1,6 +1,6 @@
 from __future__ import print_function
 import argparse
-import torch
+from torch import load, from_numpy
 from PIL import Image
 from torchvision.transforms import ToTensor
 from torchvision.utils import save_image
@@ -25,7 +25,7 @@ img = Image.open(opt.input_image).convert('RGB')
 img = img.resize((opt.imageSize, opt.imageSize), Image.ANTIALIAS)
 
 if (opt.model_epoch == -1) :
-    model = torch.load(opt.model)
+    model = load(opt.model)
 else :
     pass
     # TODO : load model for specific epoch
@@ -36,7 +36,7 @@ if is_available():
     input = input.cuda()
     model = model.cuda()
 
-input.unsqueeze(0)
+input = input.unsqueeze(0)
 out = model(input)
 out = out.unsqueeze_(0)
 
@@ -45,6 +45,7 @@ out_img = out[0].detach().numpy()
 out_img *= 255.0
 out_img = out_img.clip(0, 255)
 
-save_image(out_img,'compressed')
+out_img = from_numpy(out_img)
+save_image(out_img,opt.output_filename)
 
 print('output image saved to ', opt.output_filename)
