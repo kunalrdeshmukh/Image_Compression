@@ -109,7 +109,8 @@ def train(encoder,decoder,CUDA):
 
             print("===> Epoch[{}]({}/{}): Training Loss: {:.4f}".format(epoch, i, len(training_data_loader), loss))
         
-        print("===> Epoch {} Complete: Avg. Loss: {:.4f}".format(epoch, epoch_loss / len(training_data_loader)))
+        print("===> Epoch {} Complete: Avg. Loss: {:.4f}\n".format(epoch, epoch_loss / len(training_data_loader)))
+        validation(encoder,decoder,CUDA)
 
 
         # do checkpointing
@@ -117,7 +118,7 @@ def train(encoder,decoder,CUDA):
         save(decoder.state_dict(), '%s/Decoder_epoch_%d.pth' % (opt.outf, epoch))
 
 
-def test(encoder,decoder,CUDA):
+def validation(encoder,decoder,CUDA):
 
     print(' ===== Validation ===== ')
 
@@ -134,7 +135,7 @@ def test(encoder,decoder,CUDA):
             mse = criterion(input, final)
             psnr = 10 * log10(1 / mse.item())
             avg_psnr += psnr
-    print("===> Avg. PSNR: {:.4f} dB".format(avg_psnr / len(testing_data_loader)))
+    print("===> Avg. PSNR: {:.4f} dB\n".format(avg_psnr / len(testing_data_loader)))
 
 
     
