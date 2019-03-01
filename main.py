@@ -72,14 +72,13 @@ def get_decoder_info():
 
 def train(encoder,decoder,CUDA):
 
-    print(' ===== Training ===== ')
-
     optimizerE = optim.Adam(encoder.parameters(), lr=opt.lr)
     optimizerD = optim.Adam(decoder.parameters(), lr=opt.lr)
     # optimizerE = optim.SGD(netD.parameters(), lr=opt.lr)
     # optimizerD = optim.SGD(netG.parameters(), lr=opt.lr)
 
     for epoch in range(opt.nEpochs):
+        print(' ===== Training ===== ')
         epoch_loss = 0
         for i, data in enumerate(training_data_loader, 0):
 
@@ -98,6 +97,8 @@ def train(encoder,decoder,CUDA):
 
             loss1 = criterion(input, decoder_output)
             loss2 = criterion(residual_img,upscaled_image)
+            # print(loss1)
+            # print(loss2)
             (loss1+loss2).backward()
 
             optimizerE.step()
@@ -123,6 +124,7 @@ def validation(encoder,decoder,CUDA):
     print(' ===== Validation ===== ')
 
     avg_psnr = 0
+    avg_mse = 0
     with no_grad():
         for batch in testing_data_loader:
             if CUDA:
@@ -133,8 +135,10 @@ def validation(encoder,decoder,CUDA):
             compressed_img = encoder(input)
             final,out,upscaled_imag = decoder(compressed_img)
             mse = criterion(input, final)
+            avg_mse += mse
             psnr = 10 * log10(1 / mse.item())
             avg_psnr += psnr
+    print("===> Avg. MSE: {:.4f} ".format(avg_mse / len(testing_data_loader)))
     print("===> Avg. PSNR: {:.4f} dB\n".format(avg_psnr / len(testing_data_loader)))
 
 
@@ -174,7 +178,7 @@ def main():
     #set loss and optimizer 
     train(encoder,decoder,CUDA)
 
-    test(encoder,decoder,CUDA)
+    validation(encoder,decoder,CUDA)
 
     # Save Model
     save(encoder,'%s/Encoder_model.pth'%opt.outf )

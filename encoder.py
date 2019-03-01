@@ -29,6 +29,7 @@ if (opt.model_epoch == -1) :
 else :
     pass
     # TODO : load model for specific epoch
+    
 img_to_tensor = ToTensor()
 input = img_to_tensor(img)
 

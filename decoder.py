@@ -1,6 +1,6 @@
 from __future__ import print_function
 import argparse
-import torch
+from torch import from_numpy, load
 from PIL import Image
 from torchvision.transforms import ToTensor
 from torchvision.utils import save_image
@@ -21,7 +21,7 @@ print(opt)
 img = Image.open(opt.input_image).convert('RGB')
 
 if (opt.model_epoch == -1) :
-    model = torch.load(opt.model)
+    model = load(opt.model)
 else :
     pass
     # TODO : load model for specific epoch
