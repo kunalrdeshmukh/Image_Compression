@@ -10,6 +10,8 @@ from math import log10
 
 from network import EncoderNet, DecoderNet
 from data import get_training_set, get_test_set
+import matplotlib.pyplot as plt
+import time.time()
 
 
 
@@ -76,7 +78,8 @@ def train(encoder,decoder,CUDA):
     optimizerD = optim.Adam(decoder.parameters(), lr=opt.lr)
     # optimizerE = optim.SGD(netD.parameters(), lr=opt.lr)
     # optimizerD = optim.SGD(netG.parameters(), lr=opt.lr)
-
+    train_loss = []
+    val_loss = []
     for epoch in range(opt.nEpochs):
         print(' ===== Training ===== ')
         epoch_loss = 0
@@ -93,30 +96,36 @@ def train(encoder,decoder,CUDA):
             optimizerD.zero_grad()
 
             encoder_output = encoder(input)
-            decoder_output, residual_img, upscaled_image  = decoder(input)
+            decoder_output, residual_img, upscaled_image  = decoder(encoder_output)
 
             loss1 = criterion(input, decoder_output)
-            loss2 = criterion(residual_img,upscaled_image)
-            # print(loss1)
-            # print(loss2)
-            (loss1+loss2).backward()
+            # print(loss1.item())
+
+            # loss2 = criterion(residual_img,input - upscaled_image)
+            # print(loss2.item())
+
+            loss1.backward()
+            # (loss1+loss2).backward()
 
             optimizerE.step()
             optimizerD.step()
  
-            loss = loss1.item() + loss2.item()
+
+            # loss = loss1.item() + loss2.item()
+            loss = loss1.item()
 
             epoch_loss += loss
 
             print("===> Epoch[{}]({}/{}): Training Loss: {:.4f}".format(epoch, i, len(training_data_loader), loss))
         
         print("===> Epoch {} Complete: Avg. Loss: {:.4f}\n".format(epoch, epoch_loss / len(training_data_loader)))
-        validation(encoder,decoder,CUDA)
-
+        val_loss.append(validation(encoder,decoder,CUDA))
+        train_loss.append(epoch_loss)
 
         # do checkpointing
         save(encoder.state_dict(), '%s/Encoder_epoch_%d.pth' % (opt.outf, epoch))
         save(decoder.state_dict(), '%s/Decoder_epoch_%d.pth' % (opt.outf, epoch))
+    return (train_loss,val_loss)
 
 
 def validation(encoder,decoder,CUDA):
@@ -140,6 +149,7 @@ def validation(encoder,decoder,CUDA):
             avg_psnr += psnr
     print("===> Avg. MSE: {:.4f} ".format(avg_mse / len(testing_data_loader)))
     print("===> Avg. PSNR: {:.4f} dB\n".format(avg_psnr / len(testing_data_loader)))
+    return mse
 
 
     
@@ -176,7 +186,7 @@ def main():
     print(decoder)
 
     #set loss and optimizer 
-    train(encoder,decoder,CUDA)
+    (train_loss,val_loss) = train(encoder,decoder,CUDA)
 
     validation(encoder,decoder,CUDA)
 
@@ -184,6 +194,14 @@ def main():
     save(encoder,'%s/Encoder_model.pth'%opt.outf )
     save(decoder,'%s/Decoder_model.pth'%opt.outf )
     print("Models saved at "+opt.outf)
+    
+    # Plot train, test loss curves
+    plt.plot(range(opt.nEpochs),train_loss , 'r--',label='Training Loss')
+    plt.plot(range(opt.nEpochs), val_loss, 'bs',label='Validation Loss')
+    plt.title('Loss vs Epochs')
+    plt.legend()
+    plt.savefig('loss_'+str(time.time())+'.png')
+
 
 
 if __name__ == '__main__':

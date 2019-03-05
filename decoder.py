@@ -39,8 +39,8 @@ out = out.unsqueeze_(0)
 
 final = final.cpu()
 out_img = final[0].detach().numpy()
-out_img *= 255.0
-out_img = out_img.clip(0, 255)
+# out_img *= 255.0
+# out_img = out_img.clip(0, 255)
 
 out_img = from_numpy(out_img)
 save_image(out_img,opt.output_filename)
