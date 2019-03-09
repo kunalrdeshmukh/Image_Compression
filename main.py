@@ -170,7 +170,7 @@ def main():
 
     CUDA = is_available()
     if CUDA:
-        print(" Using CUDA ...")
+        print("|| Using CUDA ||")
         print()
         encoder = EncoderNet(encoder_info).cuda()
         decoder = DecoderNet(decoder_info).cuda()
