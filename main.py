@@ -11,7 +11,8 @@ from math import log10
 from network import EncoderNet, DecoderNet
 from data import get_training_set, get_test_set
 import matplotlib.pyplot as plt
-import time.time()
+import time
+import csv
 
 
 
@@ -74,12 +75,15 @@ def get_decoder_info():
 
 def train(encoder,decoder,CUDA):
 
-    optimizerE = optim.Adam(encoder.parameters(), lr=opt.lr)
-    optimizerD = optim.Adam(decoder.parameters(), lr=opt.lr)
+    # optimizerE = optim.Adam(encoder.parameters(), lr=opt.lr)
+    # optimizerD = optim.Adam(decoder.parameters(), lr=opt.lr)
+    params = list(encoder.parameters()) + list(decoder.parameters())
+    optimizer = optim.Adam(params, lr=opt.lr)
     # optimizerE = optim.SGD(netD.parameters(), lr=opt.lr)
     # optimizerD = optim.SGD(netG.parameters(), lr=opt.lr)
     train_loss = []
     val_loss = []
+    psnr = []
     for epoch in range(opt.nEpochs):
         print(' ===== Training ===== ')
         epoch_loss = 0
@@ -92,8 +96,9 @@ def train(encoder,decoder,CUDA):
                 input = data.to("cpu")
 
             # set gradient to zero
-            optimizerE.zero_grad()
-            optimizerD.zero_grad()
+            # optimizerE.zero_grad()
+            # optimizerD.zero_grad()
+            optimizer.zero_grad()
 
             encoder_output = encoder(input)
             decoder_output, residual_img, upscaled_image  = decoder(encoder_output)
@@ -101,31 +106,34 @@ def train(encoder,decoder,CUDA):
             loss1 = criterion(input, decoder_output)
             # print(loss1.item())
 
-            # loss2 = criterion(residual_img,input - upscaled_image)
+            loss2 = criterion(residual_img,input - upscaled_image)
             # print(loss2.item())
 
-            loss1.backward()
-            # (loss1+loss2).backward()
+            # loss1.backward()
+            (loss1+loss2).backward()
 
-            optimizerE.step()
-            optimizerD.step()
+            # optimizerE.step()
+            # optimizerD.step()
+            optimizer.step()
  
 
-            # loss = loss1.item() + loss2.item()
-            loss = loss1.item()
+            loss = loss1.item() + loss2.item()
+            # loss = loss1.item()
 
             epoch_loss += loss
 
             print("===> Epoch[{}]({}/{}): Training Loss: {:.4f}".format(epoch, i, len(training_data_loader), loss))
         
         print("===> Epoch {} Complete: Avg. Loss: {:.4f}\n".format(epoch, epoch_loss / len(training_data_loader)))
-        val_loss.append(validation(encoder,decoder,CUDA))
+        (avg_mse,avg_psnr) = validation(encoder,decoder,CUDA)
+        val_loss.append(avg_mse)
         train_loss.append(epoch_loss)
-
+        psnr.append(avg_psnr)
         # do checkpointing
-        save(encoder.state_dict(), '%s/Encoder_epoch_%d.pth' % (opt.outf, epoch))
-        save(decoder.state_dict(), '%s/Decoder_epoch_%d.pth' % (opt.outf, epoch))
-    return (train_loss,val_loss)
+        if epoch % 20 == 0:  # happens 20 times
+            save(encoder.state_dict(), '%s/Encoder_epoch_%d.pth' % (opt.outf, epoch))
+            save(decoder.state_dict(), '%s/Decoder_epoch_%d.pth' % (opt.outf, epoch))
+    return (train_loss,val_loss,psnr)
 
 
 def validation(encoder,decoder,CUDA):
@@ -144,12 +152,12 @@ def validation(encoder,decoder,CUDA):
             compressed_img = encoder(input)
             final,out,upscaled_imag = decoder(compressed_img)
             mse = criterion(input, final)
-            avg_mse += mse
+            avg_mse += mse.item()
             psnr = 10 * log10(1 / mse.item())
             avg_psnr += psnr
     print("===> Avg. MSE: {:.4f} ".format(avg_mse / len(testing_data_loader)))
     print("===> Avg. PSNR: {:.4f} dB\n".format(avg_psnr / len(testing_data_loader)))
-    return mse
+    return (avg_mse,avg_psnr)
 
 
     
@@ -186,9 +194,9 @@ def main():
     print(decoder)
 
     #set loss and optimizer 
-    (train_loss,val_loss) = train(encoder,decoder,CUDA)
+    (train_loss,val_loss,psnr) = train(encoder,decoder,CUDA)
 
-    validation(encoder,decoder,CUDA)
+    _, _ = validation(encoder,decoder,CUDA)
 
     # Save Model
     save(encoder,'%s/Encoder_model.pth'%opt.outf )
@@ -197,12 +205,16 @@ def main():
     
     # Plot train, test loss curves
     plt.plot(range(opt.nEpochs),train_loss , 'r--',label='Training Loss')
-    plt.plot(range(opt.nEpochs), val_loss, 'bs',label='Validation Loss')
+    plt.plot(range(opt.nEpochs), val_loss, 'b--',label='Validation Loss')
     plt.title('Loss vs Epochs')
     plt.legend()
+    plt.xlabel('Epochs')
+    plt.ylabel('loss')
     plt.savefig('loss_'+str(time.time())+'.png')
 
-
+    with open('loss_values.csv', "w") as output:
+        writer = csv.writer(output, lineterminator='\n')
+        writer.writerows([train_loss,val_loss,psnr])
 
 if __name__ == '__main__':
     main()

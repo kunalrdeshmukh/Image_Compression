@@ -24,14 +24,20 @@ print(opt)
 img = Image.open(opt.input_image).convert('RGB')
 img = img.resize((opt.imageSize, opt.imageSize), Image.ANTIALIAS)
 
+
 if (opt.model_epoch == -1) :
     model = load(opt.model)
 else :
-    pass
-    # TODO : load model for specific epoch
+    info['channels'] = opt.channels
+    model = EncoderNet(info)
+    model = model.load_state_dict(load(opt.model))
+
+print("Model Loaded.")
     
 img_to_tensor = ToTensor()
 input = img_to_tensor(img)
+save_image(input,opt.input_image+'_resized.jpg')
+
 
 if is_available():
     input = input.cuda()
@@ -47,6 +53,7 @@ out_img = out[0].detach().numpy()
 # out_img = out_img.clip(0, 255)
 
 out_img = from_numpy(out_img)
-save_image(out_img,opt.output_filename)
+# save_image(out_img,opt.output_filename)
+save_image(out[0],opt.output_filename)
 
 print('output image saved to ', opt.output_filename)
