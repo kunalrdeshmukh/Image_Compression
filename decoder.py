@@ -32,6 +32,10 @@ else :
     model = model.load_state_dict(load(opt.model))
 
 print("Model Loaded.")
+
+model.eval()
+torch.no_grad()
+
 img_to_tensor = ToTensor()
 input = img_to_tensor(img)
 
