@@ -1,6 +1,6 @@
 from __future__ import print_function
 import argparse
-from torch import load, from_numpy
+from torch import load, from_numpy,no_grad
 from PIL import Image
 from torchvision.transforms import ToTensor
 from torchvision.utils import save_image
@@ -24,7 +24,7 @@ print(opt)
 img = Image.open(opt.input_image).convert('RGB')
 img = img.resize((opt.imageSize, opt.imageSize), Image.ANTIALIAS)
 
-
+info = {}
 if (opt.model_epoch == -1) :
     model = load(opt.model)
 else :
@@ -35,7 +35,7 @@ else :
 print("Model Loaded.")
 
 model.eval()
-torch.no_grad()
+no_grad()
 
 img_to_tensor = ToTensor()
 input = img_to_tensor(img)

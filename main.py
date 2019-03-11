@@ -38,21 +38,13 @@ opt = parser.parse_args()
 print (opt)
 
 
-print(' ===== Loading datasets ===== ')
 train_set = get_training_set(opt.data_path,opt.image_size)
 test_set = get_test_set(opt.data_path,opt.image_size)
 training_data_loader = DataLoader(dataset=train_set, num_workers=opt.threads, batch_size=opt.batchSize, shuffle=True)
 testing_data_loader = DataLoader(dataset=test_set, num_workers=opt.threads, batch_size=opt.testBatchSize, shuffle=False)
 
+
 cudnn.benchmark = False #TODO : to check with value as True
-
-
-# weights initilization 
-
-def init_weights(m):
-    if type(m) == nn.Linear:
-        torch.nn.init.xavier_uniform(m.weight)
-        m.bias.data.fill_(0.01)
 
 
 # Loss function defination
@@ -84,7 +76,7 @@ def train(encoder,decoder,CUDA):
     train_loss = []
     val_loss = []
     psnr = []
-    for epoch in range(opt.nEpochs):
+    for epoch in range(1,opt.nEpochs+1):
         print(' ===== Training ===== ')
         epoch_loss = 0
         for i, data in enumerate(training_data_loader, 0):
@@ -124,7 +116,7 @@ def train(encoder,decoder,CUDA):
 
             print("===> Epoch[{}]({}/{}): Training Loss: {:.4f}".format(epoch, i, len(training_data_loader), loss))
         
-        print("===> Epoch {} Complete: Avg. Loss: {:.4f}\n".format(epoch, epoch_loss / len(training_data_loader)))
+        print("===> Epoch {} Complete: Avg. train Loss: {:.4f}\n".format(epoch, epoch_loss / len(training_data_loader)))
         (avg_mse,avg_psnr) = validation(encoder,decoder,CUDA)
         val_loss.append(avg_mse)
         train_loss.append(epoch_loss)
@@ -178,8 +170,6 @@ def main():
         encoder = EncoderNet(encoder_info)
         decoder = DecoderNet(decoder_info)
 
-    encoder.apply(init_weights)
-    decoder.apply(init_weights)
 
     if opt.encoder_net != '':
         encoder.load_state_dict(torch.load(opt.encoder_net))
