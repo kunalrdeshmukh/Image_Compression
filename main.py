@@ -9,7 +9,7 @@ from torch import save,no_grad
 from math import log10
 
 from network import EncoderNet, DecoderNet
-from data import get_training_set, get_test_set
+from data import get_training_set, get_val_set
 import matplotlib.pyplot as plt
 import time
 import csv
@@ -21,14 +21,15 @@ parser = argparse.ArgumentParser(description='Image Compression')
 parser.add_argument('--batchSize', type=int, default=64, help='training batch size')
 parser.add_argument('--testBatchSize', type=int, default=8, help='testing batch size')
 parser.add_argument('--nEpochs', type=int, default=2, help='number of epochs to train for')
-parser.add_argument('--lr', type=float, default=0.01, help='Learning Rate. Default=0.01')
-parser.add_argument('--beta', type=float, default=0.5, help='beta1 for adam. default=0.5')
+parser.add_argument('--lr', type=float, default=0.001, help='Learning Rate. Default=0.001')
+parser.add_argument('--beta', type=float, default=0.99, help='beta1 for adam. default=0.99')
 parser.add_argument('--threads', type=int, default=4, help='number of threads for data loader to use')
 parser.add_argument('--seed', type=int, default=123, help='random seed to uspe. Default=123')
 parser.add_argument('--encoder_net', type=str, default='', help='Path to pre-trained encoder net. Default=3')
 parser.add_argument('--decoder_net', type=str, default='', help='path to pre-trained deocder net. Default=3')
 parser.add_argument('--outf', default='.', help='folder to output images and model checkpoints')
 parser.add_argument('--channels', type=int, default=3, help='number of channels in an image. Default=3')
+parser.add_argument('--dataset', type=str, default='folder', help='dataset to be used for training and validation. Default=folder')
 parser.add_argument('--data_path', type=str, default='./Dataset/CLIC', 
                 help='path to images. Default=CLIC')
 parser.add_argument('--image_size', type=int, default=200, help='path to images. Default=200')
@@ -37,11 +38,18 @@ opt = parser.parse_args()
 
 print (opt)
 
-
-train_set = get_training_set(opt.data_path,opt.image_size)
-test_set = get_test_set(opt.data_path,opt.image_size)
+def init_weights(m):
+    if type(m) == nn.Linear:
+        torch.nn.init.xavier_uniform(m.weight)
+        m.bias.data.fill_(0.01)
+if opt.dataset == 'folder':
+    train_set = get_training_set(opt.data_path,opt.image_size,'folder')
+    val_set = get_val_set(opt.data_path,opt.image_size,'folder')
+elif opt.dataset == 'stl10' or opt.dataset == 'STL10':
+    train_set = get_training_set(opt.data_path,opt.image_size,'STL10')
+    val_set = get_val_set(opt.data_path,opt.image_size,'STL10')
 training_data_loader = DataLoader(dataset=train_set, num_workers=opt.threads, batch_size=opt.batchSize, shuffle=True)
-testing_data_loader = DataLoader(dataset=test_set, num_workers=opt.threads, batch_size=opt.testBatchSize, shuffle=False)
+val_data_loader = DataLoader(dataset=val_set, num_workers=opt.threads, batch_size=opt.testBatchSize, shuffle=False)
 
 
 cudnn.benchmark = False #TODO : to check with value as True
@@ -135,7 +143,7 @@ def validation(encoder,decoder,CUDA):
     avg_psnr = 0
     avg_mse = 0
     with no_grad():
-        for batch in testing_data_loader:
+        for batch in val_data_loader:
             if CUDA:
                 input = batch.to('cuda')
             else:
@@ -147,8 +155,8 @@ def validation(encoder,decoder,CUDA):
             avg_mse += mse.item()
             psnr = 10 * log10(1 / mse.item())
             avg_psnr += psnr
-    print("===> Avg. MSE: {:.4f} ".format(avg_mse / len(testing_data_loader)))
-    print("===> Avg. PSNR: {:.4f} dB\n".format(avg_psnr / len(testing_data_loader)))
+    print("===> Avg. MSE: {:.4f} ".format(avg_mse / len(val_data_loader)))
+    print("===> Avg. PSNR: {:.4f} dB\n".format(avg_psnr / len(val_data_loader)))
     return (avg_mse,avg_psnr)
 
 
@@ -169,7 +177,9 @@ def main():
     else :
         encoder = EncoderNet(encoder_info)
         decoder = DecoderNet(decoder_info)
-
+    
+    encoder.apply(init_weights)
+    decoder.apply(init_weights)
 
     if opt.encoder_net != '':
         encoder.load_state_dict(torch.load(opt.encoder_net))

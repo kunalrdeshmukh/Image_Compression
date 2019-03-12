@@ -6,9 +6,8 @@ from torchvision.transforms import ToTensor
 from torchvision.utils import save_image
 from torch.cuda import is_available 
 from network import EncoderNet
-
-
 import numpy as np
+
 
 # Training settings
 parser = argparse.ArgumentParser(description='Image compression')
@@ -52,8 +51,8 @@ out = out.unsqueeze_(0)
 
 out = out.cpu()
 out_img = out[0].detach().numpy()
-# out_img *= 255.0
-# out_img = out_img.clip(0, 255)
+out_img *= 255.0
+out_img = out_img.clip(0, 255)
 
 out_img = from_numpy(out_img)
 # save_image(out_img,opt.output_filename)
