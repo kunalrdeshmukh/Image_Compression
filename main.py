@@ -42,12 +42,14 @@ def init_weights(m):
     if type(m) == nn.Linear:
         torch.nn.init.xavier_uniform(m.weight)
         m.bias.data.fill_(0.01)
-if opt.dataset == 'folder':
-    train_set = get_training_set(opt.data_path,opt.image_size,'folder')
-    val_set = get_val_set(opt.data_path,opt.image_size,'folder')
-elif opt.dataset == 'stl10' or opt.dataset == 'STL10':
+
+train_set = get_training_set(opt.data_path,opt.image_size,'folder')
+val_set = get_val_set(opt.data_path,opt.image_size,'folder')
+
+if opt.dataset == 'stl10' or opt.dataset == 'STL10':
     train_set = get_training_set(opt.data_path,opt.image_size,'STL10')
     val_set = get_val_set(opt.data_path,opt.image_size,'STL10')
+    
 training_data_loader = DataLoader(dataset=train_set, num_workers=opt.threads, batch_size=opt.batchSize, shuffle=True)
 val_data_loader = DataLoader(dataset=val_set, num_workers=opt.threads, batch_size=opt.testBatchSize, shuffle=False)
 

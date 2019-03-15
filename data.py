@@ -8,8 +8,8 @@ from dataset import DatasetFromFolder
 
 def input_transform(crop_size):
     return Compose([
-        RandomCrop(crop_size),Normalize((0.5, 0.5, 0.5), (0.5,  0.5 , 0.5)),
-        ToTensor(),
+        RandomCrop(crop_size),
+        ToTensor(),Normalize((0.5, 0.5, 0.5), (0.5,  0.5 , 0.5))
     ])
 
 
