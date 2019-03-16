@@ -5,18 +5,20 @@ from torchvision.transforms import Compose, CenterCrop, ToTensor, Resize, Random
 from torchvision.datasets import STL10
 from dataset import DatasetFromFolder
 
+stl_img_transform = Compose([
+    ToTensor(),
+    Normalize((0.5, 0.5, 0.5), (0.5,  0.5 , 0.5))
+])
 
 def input_transform(crop_size):
     return Compose([
-        RandomCrop(crop_size),
-        ToTensor(),Normalize((0.5, 0.5, 0.5), (0.5,  0.5 , 0.5))
+        ToTensor(),Normalize((0.5, 0.5, 0.5), (0.5,  0.5 , 0.5)),RandomCrop(crop_size)
     ])
 
 
 def target_transform(crop_size):
     return Compose([
-        Resize(crop_size),
-        ToTensor(),
+        ToTensor(),Resize(crop_size)
 ])
 
 
@@ -27,7 +29,7 @@ def get_training_set(path,crop_size,dataset):
                             input_transform=input_transform(crop_size))
         elif dataset == 'STL10':
                 print("stl10 train")
-                return STL10(root=path, split='train',download=True, transform=input_transform)
+                return STL10(root=path, split='train',download=True, transform=stl_img_transform)
 
 
 def get_val_set(path,crop_size,dataset):
@@ -37,4 +39,4 @@ def get_val_set(path,crop_size,dataset):
                             input_transform=input_transform(crop_size))
         elif dataset == 'STL10':
                 print ("STL 10 test")
-                return STL10(root='path', split='test',download=True, transform=input_transform)
+                return STL10(root=path, split='test',download=True, transform=stl_img_transform)

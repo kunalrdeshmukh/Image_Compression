@@ -89,7 +89,8 @@ def train(encoder,decoder,CUDA):
         print(' ===== Training ===== ')
         epoch_loss = 0
         for i, data in enumerate(training_data_loader, 0):
-
+            if opt.dataset == 'stl10' or opt.dataset == 'STL10':
+                data,_ = data 
             # Move data to device
             if CUDA :
                 input = data.to("cuda")
