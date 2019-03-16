@@ -90,7 +90,7 @@ def train(encoder,decoder,CUDA):
         epoch_loss = 0
         for i, data in enumerate(training_data_loader, 0):
             if opt.dataset == 'stl10' or opt.dataset == 'STL10':
-                data,_ = data 
+                data, _ = data  
             # Move data to device
             if CUDA :
                 input = data.to("cuda")
@@ -123,8 +123,8 @@ def train(encoder,decoder,CUDA):
             # loss = loss1.item()
 
             epoch_loss += loss
-
-            print("===> Epoch[{}]({}/{}): Training Loss: {:.4f}".format(epoch, i, len(training_data_loader), loss))
+            if i < 5:
+                print("===> Epoch[{}]({}/{}): Training Loss: {:.4f}".format(epoch, i, len(training_data_loader), loss))
         
         print("===> Epoch {} Complete: Avg. train Loss: {:.4f}\n".format(epoch, epoch_loss / len(training_data_loader)))
         (avg_mse,avg_psnr) = validation(encoder,decoder,CUDA)
@@ -146,6 +146,8 @@ def validation(encoder,decoder,CUDA):
     avg_mse = 0
     with no_grad():
         for batch in val_data_loader:
+            if opt.dataset == 'stl10' or opt.dataset == 'STL10':
+                batch, _ = batch                  
             if CUDA:
                 input = batch.to('cuda')
             else:
