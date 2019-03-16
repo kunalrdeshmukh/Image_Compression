@@ -26,7 +26,8 @@ def get_training_set(path,crop_size,dataset):
                 return DatasetFromFolder(train_dir,
                             input_transform=input_transform(crop_size))
         elif dataset == 'STL10':
-                return STL10(root='./data', split='train',download=True, transform=input_transform)
+                print("stl10 train")
+                return STL10(root=path, split='train',download=True, transform=input_transform)
 
 
 def get_val_set(path,crop_size,dataset):
@@ -35,4 +36,5 @@ def get_val_set(path,crop_size,dataset):
                 return DatasetFromFolder(test_dir,
                             input_transform=input_transform(crop_size))
         elif dataset == 'STL10':
-                return STL10(root='./data', split='test',download=True, transform=input_transform)
+                print ("STL 10 test")
+                return STL10(root='path', split='test',download=True, transform=input_transform)

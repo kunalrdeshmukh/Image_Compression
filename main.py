@@ -30,8 +30,7 @@ parser.add_argument('--decoder_net', type=str, default='', help='path to pre-tra
 parser.add_argument('--outf', default='.', help='folder to output images and model checkpoints')
 parser.add_argument('--channels', type=int, default=3, help='number of channels in an image. Default=3')
 parser.add_argument('--dataset', type=str, default='folder', help='dataset to be used for training and validation. Default=folder')
-parser.add_argument('--data_path', type=str, default='./Dataset/CLIC', 
-                help='path to images. Default=CLIC')
+parser.add_argument('--data_path', type=str, default='./Dataset/CLIC', help='path to images. Default=CLIC')
 parser.add_argument('--image_size', type=int, default=200, help='path to images. Default=200')
 
 opt = parser.parse_args()
