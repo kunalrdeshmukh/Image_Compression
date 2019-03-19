@@ -28,15 +28,15 @@ parser.add_argument('--nEpochs', type=int, default=2, help='number of epochs to 
 parser.add_argument('--lr', type=float, default=0.001, help='Learning Rate. Default=0.001')
 parser.add_argument('--beta', type=float, default=0.99, help='beta1 for adam. default=0.99')
 parser.add_argument('--threads', type=int, default=4, help='number of threads for data loader to use')
-parser.add_argument('--seed', type=int, default=123, help='random seed to uspe. Default=123')
+# parser.add_argument('--seed', type=int, default=123, help='random seed to uspe. Default=123')
 parser.add_argument('--encoder_net', type=str, default='', help='Path to pre-trained encoder net. Default=3')
 parser.add_argument('--decoder_net', type=str, default='', help='path to pre-trained deocder net. Default=3')
 parser.add_argument('--outf', default='.', help='folder to output images and model checkpoints')
 parser.add_argument('--test_path', default='./Dataset/test', help='path of test images')
 parser.add_argument('--channels', type=int, default=3, help='number of channels in an image. Default=3')
-parser.add_argument('--dataset', type=str, default='STL10', help='dataset to be used for training and validation. Default=folder')
+parser.add_argument('--dataset', type=str, default='STL10', help='dataset to be used for training and validation. Default=STL10')
 parser.add_argument('--data_path', type=str, default='./Dataset/CLIC', help='path to images. Default=CLIC')
-parser.add_argument('--image_size', type=int, default=100, help='path to images. Default=100')
+parser.add_argument('--image_size', type=int, default=90, help='path to images. Default=100')
 parser.add_argument('--loss_function', type=int, default=0, help='Loss function. Default=0')
 parser.add_argument('--use_GPU', type=int, default=-1, help='0 for GPU, 1 for CPU . Default=AUTO')
 
@@ -45,7 +45,7 @@ opt = parser.parse_args()
 print (opt)
 
 CUDA = torch.cuda.is_available()
-LOG_INTERVAL = 2
+LOG_INTERVAL = 5
 
 if opt.use_GPU == 1:
     CUDA = False
@@ -241,26 +241,26 @@ def validation(epoch,model1,model2, test_loader):
 
 
 def save_images(model1,model2,test_loader):
-    torch.save(model1.state_dict(), './net1.pth')
-    torch.save(model2.state_dict(), './net2.pth')
+    torch.save(model1.state_dict(), './Encoder_net.pth')
+    torch.save(model2.state_dict(), './Decoder_net.pth')
 
     model1.eval()
     model2.eval()
 
     test_loss = 0
     torch.no_grad()
-    for i, (data) in enumerate(test_loader):
+    for i, data in enumerate(test_loader):
+
             data = Variable(data)
+
             if CUDA:
-            data = data.cuda()
-            com_img = model1(data)
-            final, residual_img, upscaled_image = model2(com_img)
-            # final, residual_img, upscaled_image, com_img, orig_im = model(data.cuda())
+                data = data.cuda()
+                com_img = model1(data)
+                final, residual_img, upscaled_image = model2(com_img)
             else:
-            data = data.cpu()
-            com_img = model1(data)
-            final, residual_img, upscaled_image = model2(com_img)
-            # final, residual_img, upscaled_image, com_img, orig_im = model(data)
+                data = data.cpu()
+                com_img = model1(data)
+                final, residual_img, upscaled_image = model2(com_img)
 
             test_loss += loss_function(final, residual_img, upscaled_image, com_img, data).item() 
 
@@ -329,11 +329,16 @@ def main():
     tr_loss = []
     vl_loss = []
     for epoch in range(1, EPOCHS+1):
+        t1 = time.time()
         print("Epoch : "+str(epoch))
         t_loss = train(epoch,model1,model2,train_loader)
         v_loss = validation(epoch,model1,model2,val_loader)
         tr_loss.append(t_loss)
         vl_loss.append(v_loss)
+        print("Time required for "+str(epoch)+"th epoch: "+str(time.time() - t1))
+        if epoch % 50 == 0:
+            torch.save(model1.state_dict(), '%s/Encoder_epoch_%d.pth' % (opt.outf, epoch))
+            torch.save(model2.state_dict(), '%s/Decoder_epoch_%d.pth' % (opt.outf, epoch))
     
     print("Plot and save train and validation loss curves")
         # Plot train, test loss curves
@@ -351,8 +356,8 @@ def main():
 
     print("save the models")
 
-    torch.save(model1.state_dict(), './net1.pth')
-    torch.save(model2.state_dict(), './net2.pth')
+    torch.save(model1.state_dict(), './Encoder_net.pth')
+    torch.save(model2.state_dict(), './Decoder_net.pth')
 
     print("run model for Images in test folder.")
     save_images(model1,model2,test_data_loader)
