@@ -1,24 +1,28 @@
-# Install and import torch
-import torch
-
+# Import system libraries
+import argparse
+import math
 import os
+import time
+
+
+# import 3rd party libraries
+import csv
+import matplotlib.pyplot as plt
 import skimage
 import torch
 import torchvision
-from torch import nn , optim
-from torchvision import datasets, transforms
-from torch.autograd import Variable
-from network import EncoderNet, DecoderNet
-from dataset import DatasetFromFolder
-import argparse
-
-#install and import pillow
 from PIL import Image
-import matplotlib.pyplot as plt
-import time
-import csv
+from torch import nn , optim
+from torch.autograd import Variable
+from torchvision import datasets, transforms
 
-import math
+
+# Import user-defined libraries
+from dataset import DatasetFromFolder
+from network import EncoderNet, DecoderNet
+
+
+
 irange = range
 
 
