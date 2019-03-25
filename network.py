@@ -41,12 +41,12 @@ class EncoderNet(nn.Module):
         return self.conv3(out)
 
 
-    # def _initialize_weights(self):
-    #     init.kaiming_normal_(self.conv1.weight,mode='fan_out', nonlinearity='relu')
-    #     init.kaiming_normal_(self.conv2.weight,mode='fan_out', nonlinearity='relu')
-    #     init.kaiming_normal_(self.conv3.weight,mode='fan_out', nonlinearity='relu')
-    #     # init.constant_(self.bn1.weight, 1)
-    #     # init.constant_(self.bn1.bias, 0)
+    def _initialize_weights(self):
+        init.kaiming_normal_(self.conv1.weight,mode='fan_out', nonlinearity='relu')
+        init.kaiming_normal_(self.conv2.weight,mode='fan_out', nonlinearity='relu')
+        init.kaiming_normal_(self.conv3.weight,mode='fan_out', nonlinearity='relu')
+        # init.constant_(self.bn1.weight, 1)
+        # init.constant_(self.bn1.bias, 0)
 
 
 class DecoderNet(nn.Module):
@@ -83,15 +83,15 @@ class DecoderNet(nn.Module):
         final = residual_img #+ upscaled_image 
         return final,residual_img,upscaled_image
 
-    # def _initialize_weights(self):
-    #     init.kaiming_normal_(self.deconv1.weight,mode='fan_out', nonlinearity='relu')
-    #     init.kaiming_normal_(self.deconv2.weight,mode='fan_out', nonlinearity='relu')
-    #     init.kaiming_normal_(self.deconv_n.weight,mode='fan_out', nonlinearity='relu')
-    #     init.kaiming_normal_(self.deconv3.weight,mode='fan_out', nonlinearity='relu')
-        # init.constant_(self.bn2.weight, 1)
-        # init.constant_(self.bn2.bias, 0)
-        # init.constant_(self.bn_n.weight, 1)
-        # init.constant_(self.bn_n.bias, 0)
+    def _initialize_weights(self):
+        init.kaiming_normal_(self.deconv1.weight,mode='fan_out', nonlinearity='relu')
+        init.kaiming_normal_(self.deconv2.weight,mode='fan_out', nonlinearity='relu')
+        init.kaiming_normal_(self.deconv_n.weight,mode='fan_out', nonlinearity='relu')
+        init.kaiming_normal_(self.deconv3.weight,mode='fan_out', nonlinearity='relu')
+        init.constant_(self.bn2.weight, 1)
+        init.constant_(self.bn2.bias, 0)
+        init.constant_(self.bn_n.weight, 1)
+        init.constant_(self.bn_n.bias, 0)
 
 # class ConvLSTMCell(ConvRNNCellBase):
 #     def __init__(self,

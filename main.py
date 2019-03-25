@@ -2,6 +2,7 @@
 import argparse
 import math
 import os
+import sys
 import time
 
 
@@ -43,6 +44,8 @@ parser.add_argument('--data_path', type=str, default='./Dataset/CLIC', help='pat
 parser.add_argument('--image_size', type=int, default=90, help='path to images. Default=100')
 parser.add_argument('--loss_function', type=int, default=0, help='Loss function. Default=0')
 parser.add_argument('--use_GPU', type=int, default=-1, help='0 for GPU, 1 for CPU . Default=AUTO')
+parser.add_argument('--mode', type=str, default='both', help='train / test / both . Default=both')
+
 
 opt = parser.parse_args()
 
@@ -155,7 +158,7 @@ def img_transform(crop_size):
     return transforms.Compose([
         transforms.RandomCrop(crop_size),
         transforms.ToTensor(),
-        transforms.Normalize((0.5, 0.5, 0.5), (0.5,  0.5 , 0.5)),
+        # transforms.Normalize((0.5, 0.5, 0.5), (0.5,  0.5 , 0.5)),
         
     ])
   
@@ -186,14 +189,12 @@ def train(epoch,model1,model2,train_loader):
         if opt.dataset.upper() == 'STL10':
             data , _ = data
         data = Variable(data)
-        # optimizer.zero_grad()
         optimizer1.zero_grad()
         optimizer2.zero_grad()
         if CUDA:
           data = data.cuda()
           com_img = model1(data)
           final, residual_img, upscaled_image = model2(com_img)
-          # final, residual_img, upscaled_image, com_img, orig_im = model(data.cuda())
         else :
           data = data.cpu()
           com_img = model1(data)
@@ -201,7 +202,6 @@ def train(epoch,model1,model2,train_loader):
         loss = loss_function(final, residual_img, upscaled_image, com_img, data)
         loss.backward()
         train_loss += loss.item()
-        # optimizer.step()
         optimizer1.step()
         optimizer2.step()
         if batch_idx % LOG_INTERVAL == 0:
@@ -245,8 +245,8 @@ def validation(epoch,model1,model2, test_loader):
 
 
 def save_images(model1,model2,test_loader):
-    torch.save(model1.state_dict(), './Encoder_net.pth')
-    torch.save(model2.state_dict(), './Decoder_net.pth')
+    model1.load_state_dict(torch.load('./Encoder_net.pth'))
+    model2.load_state_dict(torch.load('./Decoder_net.pth'))
 
     model1.eval()
     model2.eval()
@@ -291,9 +291,7 @@ def main():
     """### Parameters"""
     CHANNELS = opt.channels
     HEIGHT = opt.image_size
-    WIDTH = opt.image_size
     EPOCHS = opt.nEpochs
-    BATCH_SIZE = opt.batchSize
 
     """### Load Dataset"""
     if opt.dataset.upper() == 'STL10':
@@ -327,8 +325,15 @@ def main():
         model1 = EncoderNet(info).cpu()
         model2 = DecoderNet(info).cpu()
 
-    print("GPU available ? "+str(CUDA))
+    print("GPU available : "+str(CUDA))
 
+
+    if opt.mode.upper() == 'TEST':  
+        print(" Mode selected : test")
+        print("run model for Images in test folder.")
+        save_images(model1,model2,test_data_loader)
+        sys.exit()
+    
     """### Program Execution"""
     tr_loss = []
     vl_loss = []
@@ -363,9 +368,9 @@ def main():
     torch.save(model1.state_dict(), './Encoder_net.pth')
     torch.save(model2.state_dict(), './Decoder_net.pth')
 
-    print("run model for Images in test folder.")
-    save_images(model1,model2,test_data_loader)
-
+    if opt.mode.upper() == 'BOTH':  
+        print("run model for Images in test folder.")
+        save_images(model1,model2,test_data_loader)
 
 
 if __name__ == '__main__':
