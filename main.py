@@ -2,6 +2,7 @@
 import argparse
 import math
 import os
+import random
 import sys
 import time
 
@@ -41,7 +42,7 @@ parser.add_argument('--test_path', default='./Dataset/test', help='path of test 
 parser.add_argument('--channels', type=int, default=3, help='number of channels in an image. Default=3')
 parser.add_argument('--dataset', type=str, default='STL10', help='dataset to be used for training and validation. Default=STL10')
 parser.add_argument('--data_path', type=str, default='./Dataset/CLIC', help='path to images. Default=CLIC')
-parser.add_argument('--image_size', type=int, default=90, help='path to images. Default=100')
+parser.add_argument('--image_size', type=int, default=90, help='path to images. Default=90')
 parser.add_argument('--loss_function', type=int, default=0, help='Loss function. Default=0')
 parser.add_argument('--use_GPU', type=int, default=-1, help='0 for GPU, 1 for CPU . Default=AUTO')
 parser.add_argument('--mode', type=str, default='both', help='train / test / both . Default=both')
@@ -154,14 +155,29 @@ def save_image(tensor, filename, nrow=8, padding=2,
 
 
 
-def img_transform(crop_size):
+def img_transform_train(crop_size):
+    if opt.dataset.upper() == 'STL10':
+        return transforms.Compose([
+            transforms.RandomCrop(crop_size),
+            transforms.ToTensor(),
+            # transforms.Normalize((0.5, 0.5, 0.5), (0.5,  0.5 , 0.5)),  
+        ])
+    else :   # if it is reading the files from folder.
+        return transforms.Compose([
+            transforms.RandomApply([
+                transforms.RandomHorizontalFlip(p=0.8),
+                transforms.RandomVerticalFlip(),
+                transforms.RandomRotation(degrees= random.randint(10,350))
+            ]),
+            transforms.RandomCrop(crop_size),
+            transforms.ToTensor(),
+        ])
+
+def img_transform_test(crop_size):
     return transforms.Compose([
         transforms.RandomCrop(crop_size),
         transforms.ToTensor(),
-        # transforms.Normalize((0.5, 0.5, 0.5), (0.5,  0.5 , 0.5)),
-        
     ])
-  
 
 """### Loss function"""
 
@@ -179,7 +195,6 @@ def loss_function(final_img,residual_img,upscaled_img,com_img,orig_img):
 """### define Train and Test methods"""
 
 def train(epoch,model1,model2,train_loader):
-    # model.train()
     optimizer1 = optim.Adam(model1.parameters(), lr=1e-3)
     optimizer2 = optim.Adam(model2.parameters(), lr=1e-3)
     model1.train()
@@ -214,14 +229,14 @@ def train(epoch,model1,model2,train_loader):
           epoch, train_loss / len(train_loader.dataset)))
     return train_loss / len(train_loader.dataset)
 
-def validation(epoch,model1,model2, test_loader):
+def validation(epoch,model1,model2, val_loader):
   
     model1.eval()
     model2.eval()
     val_loss = 0
     total_psnr = 0 
     torch.no_grad()
-    for i, data in enumerate(test_loader):
+    for i, data in enumerate(val_loader):
         if opt.dataset.upper() == 'STL10':
             data , _ = data
         data = Variable(data)
@@ -238,13 +253,14 @@ def validation(epoch,model1,model2, test_loader):
         val_loss += batch_loss
         psnr = 10 * math.log10(1 / batch_loss)
         total_psnr += psnr
-    val_loss /= len(test_loader.dataset)
+    val_loss /= len(val_loader.dataset)
     print('====> val set loss: {:.4f}'.format(val_loss))
-    print('====> Avg. PSNR : {:.4f}'.format(total_psnr/len(test_loader.dataset)))
+    print('====> Avg. PSNR : {:.4f}'.format(total_psnr/len(val_loader.dataset)))
     return val_loss
 
 
 def save_images(model1,model2,test_loader):
+    t1 = time.time()
     model1.load_state_dict(torch.load('./Encoder_net.pth'))
     model2.load_state_dict(torch.load('./Decoder_net.pth'))
 
@@ -285,7 +301,7 @@ def save_images(model1,model2,test_loader):
 
     test_loss /= len(test_loader.dataset)
     print('====> Test set loss: {:.4f}'.format(test_loss))
-
+    print("Avg. Time required for inference :"+str((time.time()-t1)/len(test_loader.dataset))) 
 
 def main():
     """### Parameters"""
@@ -295,13 +311,11 @@ def main():
 
     """### Load Dataset"""
     if opt.dataset.upper() == 'STL10':
-        trainset = datasets.STL10(root='./data', split='train',download=True, transform=img_transform((opt.image_size,opt.image_size)))
-
-        val_set = datasets.STL10(root='./data', split='test',download=True, transform=img_transform((opt.image_size,opt.image_size)))
+        trainset = datasets.STL10(root='./data', split='train',download=True, transform=img_transform_train((opt.image_size,opt.image_size)))
+        val_set = datasets.STL10(root='./data', split='test',download=True, transform=img_transform_train((opt.image_size,opt.image_size)))
     elif opt.dataset.upper() == 'FOLDER':
-        trainset = DatasetFromFolder(opt.data_path+'train/', input_transform=img_transform((opt.image_size,opt.image_size)))
-
-        val_set = DatasetFromFolder(opt.data_path+'valid/', input_transform=img_transform((opt.image_size,opt.image_size)))
+        trainset = DatasetFromFolder(opt.data_path+'train/', input_transform=img_transform_train((opt.image_size,opt.image_size)))
+        val_set = DatasetFromFolder(opt.data_path+'valid/', input_transform=img_transform_train((opt.image_size,opt.image_size)))
 
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=opt.batchSize,
                                         shuffle=True, num_workers=opt.threads)
@@ -309,7 +323,7 @@ def main():
                                         shuffle=False, num_workers=opt.threads)
 
     test_set =  DatasetFromFolder(opt.test_path,
-                            input_transform=img_transform((opt.image_size,opt.image_size)))
+                            input_transform=img_transform_test((opt.image_size,opt.image_size)))
     test_data_loader = torch.utils.data.DataLoader(dataset=test_set, num_workers=opt.threads, shuffle=False)
 
 

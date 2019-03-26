@@ -76,9 +76,16 @@ class DecoderNet(nn.Module):
         out = self.relu(self.deconv1(upscaled_image))
         out = self.relu(self.deconv2(out))
         out = self.bn2(out)
+        strt = out
         for _ in range(5):
             out = self.relu(self.deconv_n(out))
             out = self.bn_n(out)
+        out += strt
+        interm = out
+        for _ in range(5):
+            out = self.relu(self.deconv_n(out))
+            out = self.bn_n(out)
+        out += interm
         residual_img = self.deconv3(out)
         final = residual_img #+ upscaled_image 
         return final,residual_img,upscaled_image
