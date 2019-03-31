@@ -34,7 +34,6 @@ parser.add_argument('--nEpochs', type=int, default=2, help='number of epochs to 
 parser.add_argument('--lr', type=float, default=0.001, help='Learning Rate. Default=0.001')
 parser.add_argument('--beta', type=float, default=0.99, help='beta1 for adam. default=0.99')
 parser.add_argument('--threads', type=int, default=4, help='number of threads for data loader to use')
-# parser.add_argument('--seed', type=int, default=123, help='random seed to uspe. Default=123')
 parser.add_argument('--encoder_net', type=str, default='', help='Path to pre-trained encoder net. Default=3')
 parser.add_argument('--decoder_net', type=str, default='', help='path to pre-trained deocder net. Default=3')
 parser.add_argument('--outf', default='.', help='folder to output images and model checkpoints')
@@ -58,86 +57,6 @@ LOG_INTERVAL = 5
 if opt.use_GPU == 1:
     CUDA = False
 
-def make_grid(tensor, nrow=8, padding=2,
-              normalize=False, range=None, scale_each=False, pad_value=0):
-    """Make a grid of images.
-    Args:
-        tensor (Tensor or list): 4D mini-batch Tensor of shape (B x C x H x W)
-            or a list of images all of the same size.
-        nrow (int, optional): Number of images displayed in each row of the grid.
-            The Final grid size is (B / nrow, nrow). Default is 8.
-        padding (int, optional): amount of padding. Default is 2.
-        normalize (bool, optional): If True, shift the image to the range (0, 1),
-            by subtracting the minimum and dividing by the maximum pixel value.
-        range (tuple, optional): tuple (min, max) where min and max are numbers,
-            then these numbers are used to normalize the image. By default, min and max
-            are computed from the tensor.
-        scale_each (bool, optional): If True, scale each image in the batch of
-            images separately rather than the (min, max) over all images.
-        pad_value (float, optional): Value for the padded pixels.
-    Example:
-        See this notebook `here <https://gist.github.com/anonymous/bf16430f7750c023141c562f3e9f2a91>`_
-    """
-    if not (torch.is_tensor(tensor) or
-            (isinstance(tensor, list) and all(torch.is_tensor(t) for t in tensor))):
-        raise TypeError('tensor or list of tensors expected, got {}'.format(type(tensor)))
-
-    # if list of tensors, convert to a 4D mini-batch Tensor
-    if isinstance(tensor, list):
-        tensor = torch.stack(tensor, dim=0)
-
-    if tensor.dim() == 2:  # single image H x W
-        tensor = tensor.view(1, tensor.size(0), tensor.size(1))
-    if tensor.dim() == 3:  # single image
-        if tensor.size(0) == 1:  # if single-channel, convert to 3-channel
-            tensor = torch.cat((tensor, tensor, tensor), 0)
-        tensor = tensor.view(1, tensor.size(0), tensor.size(1), tensor.size(2))
-
-    if tensor.dim() == 4 and tensor.size(1) == 1:  # single-channel images
-        tensor = torch.cat((tensor, tensor, tensor), 1)
-
-    if normalize is True:
-        tensor = tensor.clone()  # avoid modifying tensor in-place
-        if range is not None:
-            assert isinstance(range, tuple), \
-                "range has to be a tuple (min, max) if specified. min and max are numbers"
-
-        def norm_ip(img, min, max):
-            img.clamp_(min=min, max=max)
-            img.add_(-min).div_(max - min + 1e-5)
-
-        def norm_range(t, range):
-            if range is not None:
-                norm_ip(t, range[0], range[1])
-            else:
-                norm_ip(t, float(t.min()), float(t.max()))
-
-        if scale_each is True:
-            for t in tensor:  # loop over mini-batch dimension
-                norm_range(t, range)
-        else:
-            norm_range(tensor, range)
-
-    if tensor.size(0) == 1:
-        return tensor.squeeze()
-
-    # make the mini-batch of images into a grid
-    nmaps = tensor.size(0)
-    xmaps = min(nrow, nmaps)
-    ymaps = int(math.ceil(float(nmaps) / xmaps))
-    height, width = int(tensor.size(2) + padding), int(tensor.size(3) + padding)
-    grid = tensor.new(3, height * ymaps + padding, width * xmaps + padding).fill_(pad_value)
-    k = 0
-    for y in irange(ymaps):
-        for x in irange(xmaps):
-            if k >= nmaps:
-                break
-            grid.narrow(1, y * height + padding, height - padding)\
-                .narrow(2, x * width + padding, width - padding)\
-                .copy_(tensor[k])
-            k = k + 1
-    return grid
-
 
 def save_image(tensor, filename, nrow=8, padding=2,
                normalize=False, range=None, scale_each=False, pad_value=0):
@@ -147,35 +66,37 @@ def save_image(tensor, filename, nrow=8, padding=2,
             saves the tensor as a grid of images by calling ``make_grid``.
         **kwargs: Other arguments are documented in ``make_grid``.
     """
-    grid = make_grid(tensor, nrow=nrow, padding=padding, pad_value=pad_value,
-                     normalize=normalize, range=range, scale_each=scale_each)
-    ndarr = grid.mul(255).clamp(0, 255).byte().permute(1, 2, 0).cpu().numpy()
-    im = Image.fromarray(ndarr)
-    im.save(filename)
+    torchvision.utils.save_image(tensor,filename)
 
 
 
 def img_transform_train(crop_size):
     if opt.dataset.upper() == 'STL10':
-        return transforms.Compose([
-            transforms.RandomCrop(crop_size),
-            transforms.ToTensor(),
-            # transforms.Normalize((0.5, 0.5, 0.5), (0.5,  0.5 , 0.5)),  
-        ])
-    else :   # if it is reading the files from folder.
+        if opt.channels == 1 :
+            return transforms.Compose([
+                transforms.Resize(crop_size),
+                transforms.Grayscale(num_output_channels=1),
+                transforms.ToTensor(),
+            ])
+        else :
+            return transforms.Compose([
+                transforms.Resize(crop_size),
+                transforms.ToTensor(),
+            ])
+    else :  
         return transforms.Compose([
             transforms.RandomApply([
                 transforms.RandomHorizontalFlip(p=0.8),
                 transforms.RandomVerticalFlip(),
                 transforms.RandomRotation(degrees= random.randint(10,350))
             ]),
-            transforms.RandomCrop(crop_size),
+            transforms.Resize(crop_size),
             transforms.ToTensor(),
         ])
 
 def img_transform_test(crop_size):
     return transforms.Compose([
-        transforms.RandomCrop(crop_size),
+        transforms.Resize(crop_size),
         transforms.ToTensor(),
     ])
 
@@ -259,7 +180,7 @@ def validation(epoch,model1,model2, val_loader):
     return val_loss
 
 
-def save_images(model1,model2,test_loader):
+def test(model1,model2,test_loader):
     t1 = time.time()
     model1.load_state_dict(torch.load('./Encoder_net.pth'))
     model2.load_state_dict(torch.load('./Decoder_net.pth'))
@@ -314,8 +235,8 @@ def main():
         trainset = datasets.STL10(root='./data', split='train',download=True, transform=img_transform_train((opt.image_size,opt.image_size)))
         val_set = datasets.STL10(root='./data', split='test',download=True, transform=img_transform_train((opt.image_size,opt.image_size)))
     elif opt.dataset.upper() == 'FOLDER':
-        trainset = DatasetFromFolder(opt.data_path+'train/', input_transform=img_transform_train((opt.image_size,opt.image_size)))
-        val_set = DatasetFromFolder(opt.data_path+'valid/', input_transform=img_transform_train((opt.image_size,opt.image_size)))
+        trainset = DatasetFromFolder(opt.data_path+'train/', input_transform=img_transform_train((opt.image_size,opt.image_size)),channels = opt.channels)
+        val_set = DatasetFromFolder(opt.data_path+'valid/', input_transform=img_transform_train((opt.image_size,opt.image_size)),channels = opt.channels)
 
     train_loader = torch.utils.data.DataLoader(trainset, batch_size=opt.batchSize,
                                         shuffle=True, num_workers=opt.threads)
@@ -323,7 +244,7 @@ def main():
                                         shuffle=False, num_workers=opt.threads)
 
     test_set =  DatasetFromFolder(opt.test_path,
-                            input_transform=img_transform_test((opt.image_size,opt.image_size)))
+                            input_transform=img_transform_test((opt.image_size,opt.image_size)),channels = opt.channels)
     test_data_loader = torch.utils.data.DataLoader(dataset=test_set, num_workers=opt.threads, shuffle=False)
 
 
@@ -345,7 +266,7 @@ def main():
     if opt.mode.upper() == 'TEST':  
         print(" Mode selected : test")
         print("run model for Images in test folder.")
-        save_images(model1,model2,test_data_loader)
+        test(model1,model2,test_data_loader)
         sys.exit()
     
     """### Program Execution"""
@@ -384,7 +305,7 @@ def main():
 
     if opt.mode.upper() == 'BOTH':  
         print("run model for Images in test folder.")
-        save_images(model1,model2,test_data_loader)
+        test(model1,model2,test_data_loader)
 
 
 if __name__ == '__main__':
